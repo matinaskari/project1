@@ -4,8 +4,10 @@
 #include <windows.h>
 #include <time.h>
 #include <vector>
-#include <windows.h>
 #include <cmath>
+#include <iostream>
+#include <fstream>
+#include <SDL2/SDL_mixer.h>
 
 using namespace std;
 
@@ -13,7 +15,9 @@ using namespace std;
 #define width 700
 #define speed 100
 
-
+const char* background = "C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background_photo4.bmp";
+int destroy_ball[20][20][1];
+int color_find_chek[20][20][1];
 int cannon_ball[3] = {0};//color -ballx - bally -
 int ballx = 300;
 int bally = 600;
@@ -23,12 +27,16 @@ int color_temp2[3]; // the ball wait for replace
 int  xMouse = -1;
 int  yMouse;
 float m;
-int dx = 10;
-int dy = 10;
-
+float k;
+int d = 16;
+SDL_Event e;
+SDL_Event q;
 bool press = false;
 bool ball = false;
 bool first = true;
+
+int statusx = 1;
+int statusy = 1;
 
 SDL_Color col_red = {255 , 0 , 0};
 SDL_Color col_blue = {0 , 0 , 255};
@@ -42,39 +50,129 @@ SDL_Color col_orange = {255 , 165 , 0};
 //                         , color(0 = red , 1 = blue , 2 = green , 3 = yellow , 4 = black , 5 = orange)
 //                         , x , y}
 
-
-void start_counter() {
-    Sleep(1000);
-    cout << "game will start in \n";
-    cout << "\t3 \n";
-    Sleep(1000);
-    cout << "\t2 \n";
-    Sleep(1000);
-    cout << "\t1 \n";
-    Sleep(1000);
+void playmusic(const char* musicFile) {
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+    Mix_Music* music = Mix_LoadMUS(musicFile);
+    Mix_PlayMusic(music, -1);
+    Mix_PlayingMusic();
+//    while () {
+//        SDL_Delay(100);
+//    }
+//    Mix_FreeMusic(music);
+//    Mix_CloseAudio();
+}
+void destroy_balls(int coordinates[20][20][5])
+{
+    for (int i = 0;i<20;i++)
+    {
+        for(int j = 0;j<20;j++)
+        {
+            if (destroy_ball[i][j][0]) coordinates[i][j][0] = 0 ;
+        }
+    }
 }
 
-// void destroy_ball(int coordinates[20][20][5])
-// {
-//     for (int i = 0;i<20;i++)
-//     {
-//         for(int j = 0;j<20;j++)
-//         {
-//             if (coordintes[i][j][0] == 1)&&(coordinates[i][j+1][0] == 1)&&(coordinates[i][j+2] == 1)
-//             {
-//                 if(coordinates[i][j][1] == coordinates[i][j+1][1])
-//                 {
-//                     if(coordinates[i][j+1][1] == coordinates[i][j+1][1])
-//                     {
-//                         coordinates[i][j][0] = 0 ;
-//                         coordinates[i][j+1][0] = 0 ;
-//                         coordinates[i][j+2][0] = 0 ;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+void reset_destroy_ball()
+{
+    for(int i = 0; i < 20 ; i++)
+    {
+        for ( int j = 0; j < 20 ; j++)
+        {
+            destroy_ball[i][j][0] = 0;
+        }
+    }
+}
+
+void reset_color_find_check()
+{
+    for(int i = 0; i < 20 ; i++)
+    {
+        for ( int j = 0; j < 20 ; j++)
+        {
+            color_find_chek[i][j][0] = 0;
+        }
+    }
+}
+
+void findcolor(int coordinates[20][20][5] , int i , int j)
+{
+    if (color_find_chek[i][j][0] == 0)
+    {
+        color_find_chek[i][j][0] = 1;
+    }
+    if (i==0)
+    {
+        if (((coordinates[i+1][j][2] == coordinates[i][j][2]) && (coordinates[i+1][j][0]))&& (color_find_chek[i+1][j][0] == 0))
+        {
+            destroy_ball[i+1][j][0] = 1;
+            findcolor(coordinates, i+1 , j);
+        }
+        if (((coordinates[i+1][j-1][2] == coordinates[i][j][2]) && (coordinates[i+1][j-1][0]))&& (color_find_chek[i+1][j-1][0] == 0))
+        {
+            destroy_ball[i+1][j-1][0] = 1;
+            findcolor(coordinates, i+1 , j-1);
+        }
+        if (((coordinates[i][j-1][2] == coordinates[i][j][2]) && (coordinates[i][j-1][0]))&& (color_find_chek[i][j-1][0] == 0))
+        {
+            destroy_ball[i][j-1][0] = 1;
+            findcolor(coordinates, i , j-1);
+        }
+        return;
+    }
+    if (i==19)
+    {
+        if (((coordinates[i-1][j][2] == coordinates[i][j][2]) && (coordinates[i-1][j][0]))&& (color_find_chek[i-1][j][0] == 0))
+        {
+            destroy_ball[i-1][j][0] = 1;
+            findcolor(coordinates, i-1 , j);
+        }
+        if (((coordinates[i-1][j-1][2] == coordinates[i][j][2]) && (coordinates[i-1][j-1][0]))&& (color_find_chek[i-1][j-1][0] == 0))
+        {
+            destroy_ball[i-1][j-1][0] = 1;
+            findcolor(coordinates, i-1 , j-1);
+        }
+        if (((coordinates[i][j-1][2] == coordinates[i][j][2]) && (coordinates[i][j-1][0]))&& (color_find_chek[i][j-1][0] == 0))
+        {
+            destroy_ball[i][j-1][0] = 1;
+            findcolor(coordinates, i , j-1);
+        }
+        return;
+    }
+    if (((coordinates[i-1][j][2] == coordinates[i][j][2]) && (coordinates[i-1][j][0])) && (color_find_chek[i-1][j][0] == 0))
+    {
+        destroy_ball[i-1][j][0] = 1;
+        findcolor(coordinates , i-1 , j);
+    }
+    if (((coordinates[i-1][j-1][2] == coordinates[i][j][2]) && (coordinates[i-1][j-1][0])) && (color_find_chek[i-1][j-1][0] == 0))
+    {
+        destroy_ball[i-1][j-1][0] = 1;
+        findcolor(coordinates, i-1 , j-1);
+    }
+    if (((coordinates[i][j-1][2] == coordinates[i][j][2]) && (coordinates[i][j-1][0]))&& (color_find_chek[i][j-1][0] == 0))
+    {
+        destroy_ball[i][j-1][0] = 1;
+        findcolor(coordinates, i , j-1);
+    }
+    if (((coordinates[i+1][j-1][2] == coordinates[i][j][2]) && (coordinates[i+1][j-1][0]))&& (color_find_chek[i+1][j-1][0] == 0))
+    {
+        destroy_ball[i+1][j-1][0] = 1;
+        findcolor(coordinates, i+1 , j-1);
+    }
+    if (((coordinates[i+1][j][2] == coordinates[i][j][2]) && (coordinates[i+1][j][0]))&& (color_find_chek[i+1][j][0] == 0))
+    {
+        destroy_ball[j+1][i][0] = 1;
+        findcolor(coordinates, i+1 , j);
+    }
+    return;
+}
+
+int xcounter(int m, int d)
+{
+    int result;
+    result = sqrt((d*d)/((m*m)+1));
+    return result;
+}
 
 int rand(int n)
 {
@@ -271,7 +369,6 @@ void cord(int coordinates[20][20][5] , int coordin[3]) // this function just loo
     else goto thisline;
 }
 
-
 void launch_balls(SDL_Renderer * renderer , int coordinates[20][20][5])
 {
     i:
@@ -293,41 +390,57 @@ void launch_balls(SDL_Renderer * renderer , int coordinates[20][20][5])
     int ex , ey;
     SDL_SetRenderDrawColor(renderer, 0 , 0 , 0 , 255);
     SDL_GetGlobalMouseState(&ex,&ey);
+    k = float(600 - ey)/float(ex - 300);
     if ((ey <= 700) && (ex <= 600))
     {
         SDL_RenderDrawLine(renderer, 300 , 600 , ex , ey);
     }
+    SDL_PollEvent(&q);
     if (!press)
     {
-        SDL_Event event;
-        if (SDL_PollEvent(&event))
+        if ((q.type == SDL_MOUSEBUTTONDOWN) && (q.button.button = SDL_BUTTON_LEFT))
         {
-            if(SDLK_SPACE == event.key.keysym.sym)
+            SDL_GetGlobalMouseState(&xMouse,&yMouse);
+            statusx = 1;
+            statusy = 1;
+            if (xMouse < 300) statusx *= -1;
+            if (yMouse > 600) statusy *= -1;
+            if ((yMouse < 600) && (xMouse > 300))
             {
-                SDL_GetGlobalMouseState(&xMouse,&yMouse);
-                press = true;
-                cord(coordinates , cannon_ball);
-                color_temp1[0] = color_temp2[0];
-                color_temp2[0] = cannon_ball[0];
+                statusy = 1;
+                statusx = 1;
             }
+            if ((yMouse < 600) && (xMouse < 300))
+            {
+                statusy = 1;
+                statusx = -1;
+            }
+            if ((yMouse > 600) && (xMouse < 300))
+            {
+                statusy = -1;
+                statusx = -1;
+            }
+            if ((yMouse > 600) && (xMouse > 300))
+            {
+                statusy = -1;
+                statusx = 1;
+            }
+            cord(coordinates , cannon_ball);
+            color_temp1[0] = color_temp2[0];
+            color_temp2[0] = cannon_ball[0];
+            press = true;
         }
     }
     if (press)
     {
-        m = (float(600 - yMouse)/float(xMouse - 300));
-        if (xMouse != -1)
-        {
-            if ((xMouse - 300)<0)
-            {
-                dx = -10;
-                m *= -1;
-            }
-        }
-        if ((bally > 686) || (bally < 14)) m *= -1;
-        if ((ballx > 586) || (ballx < 14)) dx *=-1;
-        ballx += dx;
-        bally -= (10 * m);
-        draw_circle(renderer , 1 ,  ballx , bally , 15 , ballc , ballc);
+        if ((bally > 686) || (bally < 14)) statusy *=-1;
+        if ((ballx > 586) || (ballx < 14)) statusx *=-1;
+        m = abs((float(600 - yMouse)/float(xMouse - 300)));
+        int x = xcounter(m , d);
+        int y = m * x;
+        ballx += (statusx * x);
+        bally -= (statusy * y);
+        draw_circle(renderer , 1 , ballx , bally , 15 , ballc , ballc);
         for(int i=0;i<20;i++)
         {
             for(int j=0;j<20;j++)
@@ -338,18 +451,12 @@ void launch_balls(SDL_Renderer * renderer , int coordinates[20][20][5])
                     {
                         if(abs(bally - coordinates[i][j][4]) <= 15)
                         {
-                            coordinates[i][j+1][0] = 1;
-                            coordinates[i][j+1][1] = -2;
-                            coordinates[i][j+1][2] = ballc;
-                            if (coordinates[i][j][0]&&coordinates[i][j+1][0]&&coordinates[i][j-1])
-                            {
-                                if((coordinates[i][j][1] == coordinates[i][j+1][1]) && (coordinates[i][j+1][1] == coordinates[i][j-1][1]))
-                                {
-                                    coordinates[i][j][0] = 0 ;
-                                    coordinates[i][j+1][0] = 0 ;
-                                    coordinates[i][j+2][0] = 0 ;
-                                }
-                            }
+                            reset_destroy_ball();
+                            reset_color_find_check();
+                            destroy_ball[i][j][0] = 1;
+                            color_find_chek[i][j][0] == 1;
+                            findcolor(coordinates, i , j);
+                            destroy_balls(coordinates);
                             ballx = 300;
                             bally = 600;
                             press = false;
@@ -766,6 +873,25 @@ void coord(int type , int till , int coordinates[20][20][5])
 
 void show(SDL_Renderer *renderer)
 {
+    // SDL_Surface* cannon = SDL_LoadBMP("cannon.bmp");
+    // SDL_Texture* texture_cannon = SDL_CreateTextureFromSurface(renderer, cannon);
+    // SDL_Rect destcannon;
+    // destcannon.x = 330;
+    // destcannon.y = 600;
+    // destcannon.w = cannon->w-190;
+    // destcannon.h = cannon->h-100;
+    // int angle;
+    // if (k > 0) angle = (-1 * (atan(k) * 180 / M_PI)) + 90;
+    // if (k < 0) angle = ((atan(k) * 180 / M_PI)) + 90;
+    // SDL_RenderCopyEx(renderer, texture_cannon, NULL,  &destcannon, angle , NULL, SDL_FLIP_NONE );
+    SDL_Surface* menu = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\in_game_menu.bmp");
+    SDL_Texture* texture_menu = SDL_CreateTextureFromSurface(renderer, menu);
+    SDL_Rect destmenu;
+    destmenu.x = 30;
+    destmenu.y = 600;
+    destmenu.w = 60;
+    destmenu.h = 90;
+    SDL_RenderCopy(renderer, texture_menu, NULL, &destmenu);
     SDL_SetRenderDrawColor(renderer, 0 , 0 , 0 , 255);
     SDL_RenderDrawLine(renderer, 0 , 600 , 180 , 600);
     SDL_RenderDrawLine(renderer, 220 , 600 , 280 , 600);
@@ -778,6 +904,14 @@ void show(SDL_Renderer *renderer)
 
 void draw_balls(int start_point , int coordinates[20][20][5] , SDL_Renderer * renderer)
 {
+    SDL_Surface* back_img = SDL_LoadBMP(background);
+    SDL_Texture* texture_img = SDL_CreateTextureFromSurface(renderer, back_img);
+    SDL_Rect destimg;
+    destimg.x = 0;
+    destimg.y = 0;
+    destimg.w = 600;
+    destimg.h = 700;
+    SDL_RenderCopy(renderer, texture_img, NULL, &destimg);
     int i = 0;
     int Rx = 15;
     while (i < 20)
@@ -914,31 +1048,385 @@ void diamond_mode()
     SDL_DestroyWindow(window);
 }
 
-void menu()
-{
-    here:
-    system("CLS");
-    int inp;
-    Sleep(500);
-    cout << "enter your choose : \n";
-    Sleep(500);
-    cout << "  [1] random mode \n";
+void menu() {
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Window* window = SDL_CreateWindow("Image Display", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 600, 700, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetWindowPosition(window ,0 , 0);
 
-    Sleep(500);
+    SDL_Surface* background1 = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background1.bmp");
+    SDL_Surface* unmuted = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\unmuted.bmp");
+    SDL_Surface* help = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\help.bmp");
+    SDL_Surface* tick = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\tick.bmp");
+    SDL_Surface* modes = SDL_LoadBMP("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\modes.bmp");
 
-    cout << "  [2] triangle mode \n";
-    Sleep(500);
-    cout << "  [3] inverted triangle mode \n";
-    Sleep(500);
-    cout << "  [4] diamond mode \n";
-    cin >> inp;
-    switch (inp)
+    SDL_Texture* texture1 = SDL_CreateTextureFromSurface(renderer, background1);
+    SDL_Texture* txunmuted = SDL_CreateTextureFromSurface(renderer, unmuted);
+    SDL_Texture* texture_help = SDL_CreateTextureFromSurface(renderer, help);
+    SDL_Texture* texture_modes = SDL_CreateTextureFromSurface(renderer, modes);
+    SDL_Texture* texture_tick1 = SDL_CreateTextureFromSurface(renderer, tick);
+    SDL_Texture* texture_tick2 = SDL_CreateTextureFromSurface(renderer, tick);
+
+
+    SDL_Rect destRect;
+    destRect.x = 0;
+    destRect.y = 0;
+    destRect.w = background1->w;
+    destRect.h = background1->h;
+
+    SDL_Rect desttick;
+    desttick.x = 90;
+    desttick.y = 250;
+    desttick.w = 50;
+    desttick.h = 50;
+
+    SDL_Rect desttick2;
+    desttick2.x = 90;
+    desttick2.y = 350;
+    desttick2.w = 50;
+    desttick2.h = 50;
+
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+    SDL_RenderPresent(renderer);
+    playmusic("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\ddaisy.mp3");
+    bool setting =0 ;
+    bool menu = 0;
+    bool mute = 0;
+    while(true)
     {
-        case 1 : random_mode();break;
-        case 2 : triangle_mode();break;
-        case 3 : inverted_triangle_mode();break;
-        case 4 : diamond_mode();break;
-        default : cout << "wrong input !";Sleep(1000);goto here;break;
+        SDL_PollEvent(&e);
+        SDL_GetGlobalMouseState(&xMouse,&yMouse);
+        // setting
+        if ((!menu)&&(!setting)) // out of start menu and setting
+        {
+            // setting menu
+            if (((xMouse > 470) && (xMouse < 570) && (yMouse > 530) && (yMouse <610)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                setting = 1;
+            }
+            // exite
+            if (((xMouse > 30) && (xMouse < 140) && (yMouse > 530) && (yMouse <610)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_DestroyWindow(window);
+                return;
+            }
+            // start ( go to menu )
+            if (((xMouse > 240) && (xMouse < 360) && (yMouse >320 ) && (yMouse <380)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_modes, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 1;
+            }
+        }
+        if(setting) // in setting
+        {
+            // go back
+            if (((xMouse > 40) && (xMouse < 180) && (yMouse > 620) && (yMouse <690)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                setting = 0;
+            }
+            // help
+            if (((xMouse > 298) && (xMouse < 417) && (yMouse > 8) && (yMouse <145)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_help, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+            }
+            //music
+            if (((xMouse > 450) && (xMouse < 580) && (yMouse > 8) && (yMouse <145)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                if(!mute)
+                {
+                    Mix_PauseMusic();
+                    SDL_Delay(100);
+                    mute = 1;
+                }
+                else
+                {
+                    Mix_ResumeMusic();
+                    SDL_Delay(100);
+                    mute = 0;
+                }
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick.x = 490;
+                desttick.y = 50;
+                desttick.w = 50;
+                desttick.h = 50;
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderPresent(renderer);
+            }
+
+
+            if (((xMouse > 50) && (xMouse < 150) && (yMouse > 214) && (yMouse <351)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                background = "C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background_photo_1.bmp";
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick.x = 90;
+                desttick.y = 250;
+                desttick.w = 50;
+                desttick.h = 50;
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 184) && (xMouse < 306) && (yMouse > 214) && (yMouse <351)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                background = "C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background_photo2.bmp";
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick.x = 235;
+                desttick.y = 250;
+                desttick.w = 50;
+                desttick.h = 50;
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 314) && (xMouse < 437) && (yMouse > 214) && (yMouse <351)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                background = "C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background_photo3.bmp";
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick.x = 340;
+                desttick.y = 250;
+                desttick.w = 50;
+                desttick.h = 50;
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 450) && (xMouse < 570) && (yMouse > 214) && (yMouse <351)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                background = "C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\background_photo4.bmp";
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick.x = 490;
+                desttick.y = 250;
+                desttick.w = 50;
+                desttick.h = 50;
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderPresent(renderer);
+            }
+
+
+
+            if (((xMouse > 50) && (xMouse < 150) && (yMouse > 460) && (yMouse <600)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                Mix_CloseAudio();
+                playmusic("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\ordak_tak_tak.mp3");
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick2.x = 90;
+                desttick2.y = 500;
+                desttick2.w = 50;
+                desttick2.h = 50;
+                SDL_RenderCopy(renderer, texture_tick2, NULL, &desttick2);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 184) && (xMouse < 306) && (yMouse > 460) && (yMouse <600)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                Mix_CloseAudio();
+                playmusic("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\Fluffing-a-Duck.mp3");
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick2.x = 235;
+                desttick2.y = 500;
+                desttick2.w = 50;
+                desttick2.h = 50;
+                SDL_RenderCopy(renderer, texture_tick2, NULL, &desttick2);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 314) && (xMouse < 437) && (yMouse > 460) && (yMouse <600)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                Mix_CloseAudio();
+                playmusic("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\run_amok.mp3");
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick2.x = 340;
+                desttick2.y = 500;
+                desttick2.w = 50;
+                desttick2.h = 50;
+                SDL_RenderCopy(renderer, texture_tick2, NULL, &desttick2);
+                SDL_RenderPresent(renderer);
+            }
+            if (((xMouse > 450) && (xMouse < 570) && (yMouse > 460) && (yMouse <600)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                Mix_CloseAudio();
+                playmusic("C:\\Users\\HP NOAVAR\\CLionProjects\\cp1\\ddaisy.mp3");
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture_tick1, NULL, &desttick);
+                SDL_RenderCopy(renderer, txunmuted, NULL, &destRect);
+                desttick2.x = 490;
+                desttick2.y = 500;
+                desttick2.w = 50;
+                desttick2.h = 50;
+                SDL_RenderCopy(renderer, texture_tick2, NULL, &desttick2);
+                SDL_RenderPresent(renderer);
+            }
+        }
+        if(menu) // in menu
+        {
+            // go back in menu
+            if (((xMouse > 60) && (xMouse < 200) && (yMouse >520 ) && (yMouse <580)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 0;
+            }
+            // random button
+            if (((xMouse > 230) && (xMouse < 360) && (yMouse >300 ) && (yMouse <400)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                random_mode();
+                menu = 0;
+            }
+            // diamond button
+            if (((xMouse > 400) && (xMouse < 530) && (yMouse >370 ) && (yMouse <470)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 0;
+            }
+            // triangle
+            if (((xMouse > 70) && (xMouse < 200) && (yMouse >370 ) && (yMouse <470)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 0;
+            }
+            // inveted triangle
+            if (((xMouse > 70) && (xMouse < 200) && (yMouse >260 ) && (yMouse <350)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 0;
+            }
+            // hourglass
+            if (((xMouse > 400) && (xMouse < 530) && (yMouse >260 ) && (yMouse <360)) && (e.type == SDL_MOUSEBUTTONDOWN) && (e.button.button = SDL_BUTTON_LEFT))
+            {
+                SDL_RenderClear(renderer);
+                SDL_RenderCopy(renderer, texture1, NULL, &destRect);
+                SDL_RenderPresent(renderer);
+                menu = 0;
+            }
+        }
+    }
+}
+
+bool username_password_validation(string username , string password)
+{
+    fstream file("members.txt" , ios::in);
+    string line;
+    while(getline(file , line))
+    {
+        if (line == username)
+        {
+            getline(file , line);
+            if(line == password)
+            {
+                file.close();
+                return true;
+            }
+            else
+            {
+                file.close();
+                return false;
+            }
+        }
+    }
+    file.close();
+    return false;
+}
+
+bool user_name_check(string username)
+{
+    fstream file("members.txt" , ios::in);
+    string line;
+    while(getline(file , line))
+    {
+        if (line == username)
+        {
+            file.close();
+            return false;
+        }
+    }
+    file.close();
+    return false;
+}
+
+
+void console_menu()
+{
+    string username;
+    string password;
+    int user_choice;
+    cout << "[1] sign in" << endl << "[2] login" << endl << "[3] members list" <<endl << "[4] exit"<<endl;
+    cin >> user_choice;
+    switch(user_choice)
+    {
+        case 1 :
+        {
+            string username , password;
+            cout << "username : ";
+            cin >> username;
+            cout << "password : ";
+            cin >> password;
+            if (user_name_check(username))
+            {
+                cout << "this username already token" << endl;
+                break;
+            }
+            ofstream file("members.txt" , ios::app);
+            file<<username<<endl<<password<<endl<<"0"<<endl;
+            file.close();
+            cout << "your account has been created successfully" << endl;
+            break;
+        }
+        case 2 :
+        {
+            string username , password;
+            cout << "username : ";
+            cin >> username;
+            cout << "password : ";
+            cin >> password;
+            if(username_password_validation(username ,password))
+            {
+                menu();
+                cout << "Welcome "  << username << endl;
+            }
+            else
+            {
+                cout << "invalid password or username" <<endl;
+                break;
+            }
+        }
+        case 3:
+        {
+            cout << "Player List : " <<endl;
+            break;
+        }
+        case 4: exit(0);
+        default :
+        {
+            cout << "invalid input";
+            break;
+        }
     }
 }
 
@@ -946,6 +1434,6 @@ int main(int argc, char ** argv)
 {
     while(true)
     {
-        menu();
+        console_menu();
     }
 }
